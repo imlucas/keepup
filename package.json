@@ -1,0 +1,21 @@
+{
+  "name": "keepup",
+  "version": "0.0.1",
+  "description": "run a script, know when it crashes, easily restart it.",
+  "scripts": {
+    "test": "mocha test/index.test.js"
+  },
+  "devDependencies": {
+    "mocha": "^1.18.2"
+  },
+  "homepage": "http://github.com/imlucas/keepup",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/imlucas/keepup.git"
+  },
+  "keywords": [
+    "gulpfriendly",
+    "processmonitor"
+  ],
+  "license": "MIT"
+}
