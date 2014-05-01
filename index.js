@@ -19,17 +19,13 @@ util.inherits(Worker, EventEmitter);
 Worker.prototype.spawn = function(){
   process.nextTick(function(){
     debug('spawning');
-    var stdio = ['pipe', 'pipe', 'pipe'];
-    this.captured = [];
+    var stdio = ['pipe', process.stdout, process.stderr];
     this.crashed = false;
 
-    this.child = spawn(this.executable, this.args)
+    this.child = spawn(this.executable, this.args, {stdio: stdio})
       .on('error', this.onError.bind(this))
       .on('message', this.onMessage.bind(this))
       .on('exit', this.onExit.bind(this));
-
-    this.child.stdout.on('data', this.onStdout.bind(this));
-    this.child.stderr.on('data', this.onStderr.bind(this));
     debug('sending start', {pid: this.child.pid});
     this.emit('start', {pid: this.child.pid});
   }.bind(this));
@@ -49,7 +45,7 @@ Worker.prototype.onExit = function(code, signal){
   }
   else {
     this.crashed = true;
-    this.emit('crash', {code: code, captured: this.captured.join('')});
+    this.emit('crash', {code: code, captured: ''});
   }
 };
 
@@ -58,11 +54,21 @@ Worker.prototype.keybindings = function(){
     debug('keybindings not available');
     return this;
   }
-  process.stdin.resume();
-  process.stdin.setRawMode(true);
-  process.stdin.on('data', this.onKeydown.bind(this));
-  debug('ctl+r → reload');
-  debug('ctl+c → quit');
+  // this.on('reload', function(){
+  //   this.child.stdin.end();
+  // }.bind(this));
+
+  // this.on('crash', function(){
+  //   this.child.stdin.end();
+  // }.bind(this));
+
+  // this.on('start', function(){
+  //   process.stdin.resume();
+  //   process.stdin.setRawMode(true);
+  //   process.stdin.on('data', this.onKeydown.bind(this));
+  //   debug('ctl+r → reload');
+  //   debug('ctl+c → quit');
+  // }.bind(this));
 };
 
 Worker.prototype.onKeydown = function(buf){
@@ -83,32 +89,17 @@ Worker.prototype.onMessage = function(data){
   this.emit('message', data);
 };
 
-Worker.prototype.onStderr = function(data){
-  debug('stderr', data.toString('utf-8'));
-  this.captured.push(data.toString('utf-8'));
-  this.emit('stderr', data);
-};
-
-Worker.prototype.onStdout = function(data){
-  debug('stdout', data.toString('utf-8'));
-  this.captured.push(data.toString('utf-8'));
-  this.emit('stdout', data);
-};
-
 Worker.prototype.reload = function(){
   if(!this.crashed){
     debug('sending reload signal to child');
-    this.child.stdout.off('data', this.onStdout.bind(this));
-    this.child.stderr.off('data', this.onStderr.bind(this));
     this.child.kill('SIGUSR2');
-    this.child.disconnect();
   }
   else{
     setTimeout(function(){
       this.revivals++;
       debug('respawning');
       this.spawn();
-    }.bind(this), 1000);
+    }.bind(this), 500);
   }
   return this;
 };
