@@ -17,5 +17,8 @@
     "gulpfriendly",
     "processmonitor"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "debug": "^0.8.1"
+  }
 }
