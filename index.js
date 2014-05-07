@@ -13,6 +13,8 @@ function Worker(command){
   this.crashed = false;
   this.keybindings();
   this.spawn();
+
+  process.on('exit', this.cleanup.bind(this));
 }
 util.inherits(Worker, EventEmitter);
 
@@ -107,6 +109,11 @@ Worker.prototype.reload = function(){
 Worker.prototype.stop = function(){
   this.child.kill('SIGTERM');
   return this;
+};
+
+Worker.prototype.cleanup = function(){
+  debug('killing child so they are not left behind');
+  this.stop();
 };
 
 module.exports = function(command){
