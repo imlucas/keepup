@@ -11,6 +11,7 @@ function Worker(command){
   this.executable = this.args.shift();
   this.revivals = 0;
   this.crashed = false;
+  this.child = null;
   this.keybindings();
   this.spawn();
 
@@ -21,17 +22,29 @@ util.inherits(Worker, EventEmitter);
 Worker.prototype.spawn = function(){
   process.nextTick(function(){
     debug('spawning');
-    var stdio = ['pipe', process.stdout, process.stderr];
     this.crashed = false;
 
-    this.child = spawn(this.executable, this.args, {stdio: stdio})
+    this.child = spawn(this.executable, this.args)
       .on('error', this.onError.bind(this))
       .on('message', this.onMessage.bind(this))
       .on('exit', this.onExit.bind(this));
     debug('sending start', {pid: this.child.pid});
     this.emit('start', {pid: this.child.pid});
+
+    this.child.stdout.on('data', this.onStdout.bind(this));
+    this.child.stderr.on('data', this.onStderr.bind(this));
   }.bind(this));
   return this;
+};
+
+Worker.prototype.onStderr = function(buf){
+  debug(this.id, 'stderr: ' + buf.toString('utf-8'));
+  this.emit('data', buf);
+};
+
+Worker.prototype.onStdout = function(buf){
+  debug(this.id, 'stdout: ' + buf.toString('utf-8'));
+  this.emit('data', buf);
 };
 
 Worker.prototype.onError = function(err){
@@ -47,7 +60,7 @@ Worker.prototype.onExit = function(code, signal){
   }
   else {
     this.crashed = true;
-    this.emit('crash', {code: code, captured: ''});
+    this.emit('crash', {code: code});
   }
 };
 
