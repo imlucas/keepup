@@ -12,7 +12,6 @@ function Worker(command){
   this.revivals = 0;
   this.crashed = false;
   this.child = null;
-  this.keybindings();
   this.spawn();
 
   process.on('exit', this.cleanup.bind(this));
@@ -38,12 +37,10 @@ Worker.prototype.spawn = function(){
 };
 
 Worker.prototype.onStderr = function(buf){
-  debug(this.id, 'stderr: ' + buf.toString('utf-8'));
   this.emit('data', buf);
 };
 
 Worker.prototype.onStdout = function(buf){
-  debug(this.id, 'stdout: ' + buf.toString('utf-8'));
   this.emit('data', buf);
 };
 
@@ -61,41 +58,6 @@ Worker.prototype.onExit = function(code, signal){
   else {
     this.crashed = true;
     this.emit('crash', {code: code});
-  }
-};
-
-Worker.prototype.keybindings = function(){
-  if(!tty.isatty(0)){
-    debug('keybindings not available');
-    return this;
-  }
-  // this.on('reload', function(){
-  //   this.child.stdin.end();
-  // }.bind(this));
-
-  // this.on('crash', function(){
-  //   this.child.stdin.end();
-  // }.bind(this));
-
-  // this.on('start', function(){
-  //   process.stdin.resume();
-  //   process.stdin.setRawMode(true);
-  //   process.stdin.on('data', this.onKeydown.bind(this));
-  //   debug('ctl+r → reload');
-  //   debug('ctl+c → quit');
-  // }.bind(this));
-};
-
-Worker.prototype.onKeydown = function(buf){
-  var key = buf.toString('utf8');
-  switch (key) {
-    case '\u0003': // Ctrl+C
-      process.exit();
-      break;
-
-    case '\u0012': // Ctrl+R
-      this.reload();
-      break;
   }
 };
 
