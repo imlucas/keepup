@@ -20,14 +20,14 @@ util.inherits(Worker, EventEmitter);
 
 Worker.prototype.spawn = function(){
   process.nextTick(function(){
-    debug('spawning');
     this.crashed = false;
 
     this.child = spawn(this.executable, this.args)
       .on('error', this.onError.bind(this))
       .on('message', this.onMessage.bind(this))
       .on('exit', this.onExit.bind(this));
-    debug('sending start', {pid: this.child.pid});
+
+    debug('spawned', this.id, {pid: this.child.pid});
     this.emit('start', {pid: this.child.pid});
 
     this.child.stdout.on('data', this.onStdout.bind(this));
@@ -36,8 +36,14 @@ Worker.prototype.spawn = function(){
   return this;
 };
 
+Worker.prototype.write = function(data){
+  debug('writing to child', data);
+  this.child.stdin.write(data);
+  return this;
+};
+
 Worker.prototype.onStderr = function(buf){
-  this.emit('data', buf);
+  this.emit('stderr', buf);
 };
 
 Worker.prototype.onStdout = function(buf){
