@@ -59,7 +59,10 @@ Worker.prototype.onExit = function(code, signal){
   debug('exit', code, signal);
   if(signal === 'SIGUSR2'){
     this.emit('reload');
-    return this.spawn();
+    this.spawn();
+  }
+  else if(code === 0){
+    this.emit('complete');
   }
   else {
     this.crashed = true;
